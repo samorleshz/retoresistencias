@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego del Código de Colores de Resistencias</title>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --container-bg: #ffffff;
+            --text-color: #333333;
+            --level-bg: #f8f9fa;
+            --score-bg: #e3f2fd;
+            --button-primary: #3498db;
+            --button-hover: #2980b9;
+            --correct-color: #27ae60;
+            --incorrect-color: #e74c3c;
+            --warning-color: #f39c12;
+        }
+
+        [data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            --container-bg: #2c3e50;
+            --text-color: #ecf0f1;
+            --level-bg: #34495e;
+            --score-bg: #3498db;
+            --button-primary: #3498db;
+            --button-hover: #2980b9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .game-container {
+            background: var(--container-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 900px;
+            width: 100%;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--button-primary);
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            font-size: 18px;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: var(--text-color);
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .constants-panel {
+            background: var(--level-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .level-info {
+            background: var(--level-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .score-item {
+            background: var(--score-bg);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin: 5px;
+            color: white;
+        }
+
+        .resistor-container {
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .resistor {
+            width: 300px;
+            height: 60px;
+            background: #d4af37;
+            border-radius: 30px;
+            position: relative;
+            margin: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .resistor::before {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 2px;
+            background: #666;
+        }
+
+        .resistor::after {
+            content: '';
+            position: absolute;
+            right: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 2px;
+            background: #666;
+        }
+
+        .color-band {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 20px;
+            border-radius: 30px;
+        }
+
+        .band1 { left: 60px; }
+        .band2 { left: 90px; }
+        .band3 { left: 120px; }
+        .band4 { left: 200px; }
+
+        .led-circuit {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .led {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            position: relative;
+            transition: all 0.5s ease;
+        }
+
+        .led.red {
+            background: radial-gradient(circle, #ff6b6b, #ff3838);
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+        }
+
+        .led.green {
+            background: radial-gradient(circle, #51cf66, #37b24d);
+            box-shadow: 0 0 20px rgba(81, 207, 102, 0.5);
+        }
+
+        .led.blue {
+            background: radial-gradient(circle, #4dabf7, #228be6);
+            box-shadow: 0 0 20px rgba(77, 171, 247, 0.5);
+        }
+
+        .led.yellow {
+            background: radial-gradient(circle, #ffd43b, #fab005);
+            box-shadow: 0 0 20px rgba(255, 212, 59, 0.5);
+        }
+
+        .led.white {
+            background: radial-gradient(circle, #f8f9fa, #e9ecef);
+            box-shadow: 0 0 20px rgba(248, 249, 250, 0.5);
+        }
+
+        .led.on {
+            animation: pulse 1s infinite;
+            filter: brightness(1.3);
+        }
+
+        .led.burned {
+            background: radial-gradient(circle, #333, #000);
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
+            animation: burn 0.5s ease-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes burn {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(2) hue-rotate(0deg); }
+            100% { filter: brightness(0.3) hue-rotate(180deg); }
+        }
+
+        .battery {
+            width: 60px;
+            height: 30px;
+            background: #2c3e50;
+            border-radius: 5px;
+            position: relative;
+        }
+
+        .battery::after {
+            content: '+';
+            position: absolute;
+            right: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .wire {
+            width: 2px;
+            height: 20px;
+            background: #34495e;
+            margin: 0 10px;
+        }
+
+        .cable-diagram {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 30px 0;
+            flex-direction: column;
+        }
+
+        .cable {
+            width: 200px;
+            height: 20px;
+            background: linear-gradient(90deg, #d4831f, #cd6839);
+            border-radius: 10px;
+            position: relative;
+            margin: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+
+        .cable::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 15px;
+            height: 15px;
+            background: #ffd700;
+            border-radius: 50%;
+        }
+
+        .cable::after {
+            content: '';
+            position: absolute;
+            right: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 15px;
+            height: 15px;
+            background: #ffd700;
+            border-radius: 50%;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .option-btn {
+            background: var(--button-primary);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .option-btn:hover {
+            background: var(--button-hover);
+            transform: translateY(-2px);
+        }
+
+        .option-btn.correct {
+            background: var(--correct-color);
+            animation: correctPulse 0.6s ease-out;
+        }
+
+        .option-btn.incorrect {
+            background: var(--incorrect-color);
+            animation: shake 0.5s ease-out;
+        }
+
+        @keyframes correctPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .feedback {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .feedback.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .next-btn {
+            background: var(--warning-color);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .next-btn:hover {
+            background: #e67e22;
+            transform: scale(1.05);
+        }
+
+        .circuit-values {
+            background: var(--level-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .calculation-steps {
+            background: var(--level-bg);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+            border-left: 4px solid var(--button-primary);
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .resistor {
+                width: 250px;
+                height: 50px;
+            }
+            
+            .color-band {
+                width: 15px;
+            }
+            
+            .band1 { left: 50px; }
+            .band2 { left: 70px; }
+            .band3 { left: 90px; }
+            .band4 { left: 160px; }
+
+            .cable {
+                width: 150px;
+            }
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <div class="game-container">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+        
+        <div class="header">
+            <h1>🔧 Código de Colores de Resistencias</h1>
+            <p>Aprende electrónica de manera divertida</p>
+        </div>
+
+        <div class="constants-panel">
+            <strong>📋 Datos de referencia:</strong><br>
+            Resistividad del cobre (ρ): 1.7 × 10⁻⁸ Ω·m
+        </div>
+
+        <div class="level-info">
+            <h2 id="levelTitle">Nivel 1: Identificación de Colores</h2>
+            <p id="levelDescription">Identifica el valor de la resistencia según sus colores</p>
+        </div>
+
+        <div class="score-board">
+            <div class="score-item">
+                <strong>Nivel:</strong> <span id="currentLevel">1</span>
+            </div>
+            <div class="score-item">
+                <strong>Puntos:</strong> <span id="score">0</span>
+            </div>
+            <div class="score-item">
+                <strong>Racha:</strong> <span id="streak">0</span>
+            </div>
+        </div>
+
+        <div id="gameArea">
+            <!-- El contenido del juego se generará aquí -->
+        </div>
+
+        <div id="feedback" class="feedback" style="display: none;"></div>
+        
+        <button id="nextBtn" class="next-btn" style="display: none;">Siguiente Pregunta</button>
+    </div>
+
+    <script>
+        class ResistorColorGame {
+            constructor() {
+                this.currentLevel = 1;
+                this.score = 0;
+                this.streak = 0;
+                this.currentQuestion = 0;
+                this.questionsPerLevel = 4;
+                
+                this.colorCodes = {
+                    'negro': { value: 0, color: '#000000' },
+                    'marrón': { value: 1, color: '#8B4513' },
+                    'rojo': { value: 2, color: '#FF0000' },
+                    'naranja': { value: 3, color: '#FFA500' },
+                    'amarillo': { value: 4, color: '#FFFF00' },
+                    'verde': { value: 5, color: '#008000' },
+                    'azul': { value: 6, color: '#0000FF' },
+                    'violeta': { value: 7, color: '#8A2BE2' },
+                    'gris': { value: 8, color: '#808080' },
+                    'blanco': { value: 9, color: '#FFFFFF' }
+                };
+                
+                this.ledTypes = {
+                    'rojo': { voltage: 1.8, color: 'red', name: 'Rojo' },
+                    'verde': { voltage: 2.0, color: 'green', name: 'Verde' },
+                    'azul': { voltage: 3.2, color: 'blue', name: 'Azul' },
+                    'amarillo': { voltage: 2.1, color: 'yellow', name: 'Amarillo' },
+                    'blanco': { voltage: 3.0, color: 'white', name: 'Blanco' }
+                };
+                
+                this.copperResistivity = 1.7e-8; // Ω·m
+                
+                this.init();
+            }
+            
+            init() {
+                this.updateDisplay();
+                this.generateQuestion();
+            }
+            
+            updateDisplay() {
+                document.getElementById('currentLevel').textContent = this.currentLevel;
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('streak').textContent = this.streak;
+                
+                const titles = [
+                    'Nivel 1: Identificación de Colores',
+                    'Nivel 2: Protección de LEDs',
+                    'Nivel 3: Cálculo de Potencia',
+                    'Nivel 4: Resistencia de Cables'
+                ];
+                
+                const descriptions = [
+                    'Identifica el valor de la resistencia según sus colores',
+                    'Calcula la resistencia correcta para proteger diferentes tipos de LEDs',
+                    'Determina la potencia que debe disipar la resistencia',
+                    'Calcula la resistencia de cables de cobre según su geometría'
+                ];
+                
+                document.getElementById('levelTitle').textContent = titles[this.currentLevel - 1];
+                document.getElementById('levelDescription').textContent = descriptions[this.currentLevel - 1];
+            }
+            
+            generateQuestion() {
+                switch(this.currentLevel) {
+                    case 1:
+                        this.generateColorIdentificationQuestion();
+                        break;
+                    case 2:
+                        this.generateLEDProtectionQuestion();
+                        break;
+                    case 3:
+                        this.generatePowerCalculationQuestion();
+                        break;
+                    case 4:
+                        this.generateCableResistanceQuestion();
+                        break;
+                }
+            }
+            
+            generateColorIdentificationQuestion() {
+                const gameArea = document.getElementById('gameArea');
+                
+                const band1 = Math.floor(Math.random() * 9) + 1;
+                const band2 = Math.floor(Math.random() * 10);
+                const multiplier = Math.floor(Math.random() * 6);
+                
+                const resistance = (band1 * 10 + band2) * Math.pow(10, multiplier);
+                
+                const colors = Object.entries(this.colorCodes);
+                const band1Color = colors.find(([name, data]) => data.value === band1);
+                const band2Color = colors.find(([name, data]) => data.value === band2);
+                const band3Color = colors.find(([name, data]) => data.value === multiplier);
+                
+                this.currentAnswer = resistance;
+                
+                gameArea.innerHTML = `
+                    <div class="resistor-container">
+                        <div class="resistor">
+                            <div class="color-band band1" style="background-color: ${band1Color[1].color}"></div>
+                            <div class="color-band band2" style="background-color: ${band2Color[1].color}"></div>
+                            <div class="color-band band3" style="background-color: ${band3Color[1].color}"></div>
+                            <div class="color-band band4" style="background-color: #FFD700"></div>
+                        </div>
+                    </div>
+                    
+                    <p><strong>¿Cuál es el valor de esta resistencia?</strong></p>
+                    
+                    <div class="options">
+                        ${this.generateOptions(resistance).map(option => 
+                            `<button class="option-btn" onclick="game.checkAnswer(${option})">${this.formatResistance(option)}</button>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+            
+            generateLEDProtectionQuestion() {
+                const gameArea = document.getElementById('gameArea');
+                
+                const voltage = 5;
+                const ledTypes = Object.values(this.ledTypes);
+                const selectedLED = ledTypes[Math.floor(Math.random() * ledTypes.length)];
+                const ledCurrent = 0.02;
+                
+                const requiredResistance = (voltage - selectedLED.voltage) / ledCurrent;
+                const standardResistors = [47, 68, 100, 150, 220, 330, 470, 680, 1000];
+                
+                const closestResistor = standardResistors.reduce((prev, curr) => 
+                    Math.abs(curr - requiredResistance) < Math.abs(prev - requiredResistance) ? curr : prev
+                );
+                
+                this.currentAnswer = closestResistor;
+                this.currentLEDVoltage = selectedLED.voltage;
+                this.currentVoltage = voltage;
+                this.currentLEDColor = selectedLED.color;
+                
+                gameArea.innerHTML = `
+                    <div class="circuit-values">
+                        <p><strong>Parámetros del circuito:</strong></p>
+                        <p>Voltaje de alimentación: ${voltage}V</p>
+                        <p>LED ${selectedLED.name}: ${selectedLED.voltage}V</p>
+                        <p>Corriente máxima del LED: 20mA</p>
+                    </div>
+                    
+                    <div class="led-circuit">
+                        <div class="battery"></div>
+                        <div class="wire"></div>
+                        <div class="resistor" style="width: 150px; height: 30px;">
+                            <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 12px;">R = ?</div>
+                        </div>
+                        <div class="wire"></div>
+                        <div class="led ${selectedLED.color}" id="circuitLED"></div>
+                        <div class="wire"></div>
+                    </div>
+                    
+                    <p><strong>¿Qué resistencia comercial es la más adecuada para proteger el LED?</strong></p>
+                    
+                    <div class="options">
+                        ${this.generateResistorOptions(closestResistor).map(option => 
+                            `<button class="option-btn" onclick="game.checkLEDAnswer(${option})">${option}Ω</button>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+            
+            generatePowerCalculationQuestion() {
+                const gameArea = document.getElementById('gameArea');
+                
+                const voltage = [5, 9, 12][Math.floor(Math.random() * 3)];
+                const resistanceValues = [100, 220, 330, 470, 680, 1000];
+                const resistance = resistanceValues[Math.floor(Math.random() * resistanceValues.length)];
+                
+                const current = voltage / resistance;
+                const power = Math.pow(current, 2) * resistance;
+                
+                this.currentAnswer = Math.round(power * 1000) / 1000; // Redondear a 3 decimales
+                
+                gameArea.innerHTML = `
+                    <div class="circuit-values">
+                        <p><strong>Parámetros del circuito:</strong></p>
+                        <p>Voltaje aplicado: ${voltage}V</p>
+                        <p>Resistencia: ${resistance}Ω</p>
+                    </div>
+                    
+                    <div class="resistor-container">
+                        <div class="resistor">
+                            <div style="position: absolute; top: -30px; left: 50%; transform: translateX(-50%); font-size: 14px;">${resistance}Ω</div>
+                            <div style="position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%); font-size: 14px;">${voltage}V</div>
+                        </div>
+                    </div>
+                    
+                    <p><strong>¿Cuánta potencia debe disipar esta resistencia?</strong></p>
+                    
+                    <div class="options">
+                        ${this.generatePowerOptions(power).map(option => 
+                            `<button class="option-btn" onclick="game.checkPowerAnswer(${option})">${option.toFixed(3)}W</button>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+            
+            generateCableResistanceQuestion() {
+                const gameArea = document.getElementById('gameArea');
+                
+                const lengths = [10, 25, 50, 100, 200]; // metros
+                const areas = [1.5, 2.5, 4.0, 6.0]; // mm²
+                
+                const length = lengths[Math.floor(Math.random() * lengths.length)];
+                const area = areas[Math.floor(Math.random() * areas.length)];
+                const areaM2 = area * 1e-6; // Convertir mm² a m²
+                
+                const resistance = (this.copperResistivity * length) / areaM2;
+                
+                this.currentAnswer = Math.round(resistance * 1000) / 1000;
+                
+                gameArea.innerHTML = `
+                    <div class="circuit-values">
+                        <p><strong>Especificaciones del cable de cobre:</strong></p>
+                        <p>Longitud: ${length} metros</p>
+                        <p>Área transversal: ${area} mm²</p>
+                        <p>Material: Cobre</p>
+                    </div>
+                    
+                    <div class="cable-diagram">
+                        <div class="cable">
+                            <div style="position: absolute; top: -25px; left: 50%; transform: translateX(-50%); font-size: 12px;">L = ${length}m</div>
+                            <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 12px;">A = ${area}mm²</div>
+                        </div>
+                        <p style="margin-top: 10px;">Cable de cobre</p>
+                    </div>
+                    
+                    <p><strong>¿Cuál es la resistencia de este cable?</strong></p>
+                    
+                    <div class="options">
+                        ${this.generateCableOptions(resistance).map(option => 
+                            `<button class="option-btn" onclick="game.checkCableAnswer(${option})">${option.toFixed(3)}Ω</button>`
+                        ).join('')}
+                    </div>
+                `;
+            }
+            
+            generateOptions(correct) {
+                const options = [correct];
+                while(options.length < 4) {
+                    let wrong = correct * (0.3 + Math.random() * 1.4);
+                    wrong = Math.round(wrong / Math.pow(10, Math.floor(Math.log10(wrong)))) * Math.pow(10, Math.floor(Math.log10(wrong)));
+                    if(!options.includes(wrong)) {
+                        options.push(wrong);
+                    }
+                }
+                return this.shuffleArray(options);
+            }
+            
+            generateResistorOptions(correct) {
+                const standardValues = [47, 68, 100, 150, 220, 330, 470, 680, 1000];
+                const options = [correct];
+                const availableOptions = standardValues.filter(val => val !== correct);
+                
+                while(options.length < 4 && availableOptions.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * availableOptions.length);
+                    options.push(availableOptions.splice(randomIndex, 1)[0]);
+                }
+                
+                return this.shuffleArray(options);
+            }
+            
+            generatePowerOptions(correct) {
+                const options = [correct];
+                while(options.length < 4) {
+                    let wrong = correct * (0.4 + Math.random() * 1.2);
+                    wrong = Math.round(wrong * 1000) / 1000;
+                    if(!options.some(opt => Math.abs(opt - wrong) < 0.001)) {
+                        options.push(wrong);
+                    }
+                }
+                return this.shuffleArray(options);
+            }
+            
+            generateCableOptions(correct) {
+                const options = [correct];
+                while(options.length < 4) {
+                    let wrong = correct * (0.3 + Math.random() * 1.4);
+                    wrong = Math.round(wrong * 1000) / 1000;
+                    if(!options.some(opt => Math.abs(opt - wrong) < 0.001)) {
+                        options.push(wrong);
+                    }
+                }
+                return this.shuffleArray(options);
+            }
+            
+            shuffleArray(array) {
+                const shuffled = [...array];
+                for(let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            }
+            
+            formatResistance(value) {
+                if(value >= 1000000) {
+                    return (value / 1000000).toFixed(1) + 'MΩ';
+                } else if(value >= 1000) {
+                    return (value / 1000).toFixed(1) + 'kΩ';
+                } else {
+                    return value + 'Ω';
+                }
+            }
+            
+            playSound(type) {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                if(type === 'correct') {
+                    // Sonido de acierto: Do - Mi - Sol
+                    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime);
+                    oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1);
+                    oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.4);
+                } else if(type === 'incorrect') {
+                    // Sonido de error: frecuencia baja descendente
+                    oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.5);
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.5);
+                }
+            }
+            
+            checkAnswer(answer) {
+                const buttons = document.querySelectorAll('.option-btn');
+                const feedback = document.getElementById('feedback');
+                
+                buttons.forEach(btn => btn.disabled = true);
+                
+                if(answer === this.currentAnswer) {
+                    this.playSound('correct');
+                    this.showCorrectAnswer(buttons, answer);
+                    this.score += 10;
+                    this.streak++;
+                    feedback.className = 'feedback correct';
+                    feedback.textContent = `¡Correcto! La resistencia es ${this.formatResistance(answer)}`;
+                } else {
+                    this.playSound('incorrect');
+                    this.showIncorrectAnswer(buttons, answer);
+                    this.streak = 0;
+                    feedback.className = 'feedback incorrect';
+                    feedback.textContent = `Incorrecto. La respuesta correcta es ${this.formatResistance(this.currentAnswer)}`;
+                }
+                
+                feedback.style.display = 'block';
+                document.getElementById('nextBtn').style.display = 'block';
+                this.updateDisplay();
+            }
+            
+            checkLEDAnswer(answer) {
+                const buttons = document.querySelectorAll('.option-btn');
+                const feedback = document.getElementById('feedback');
+                const led = document.getElementById('circuitLED');
+                
+                buttons.forEach(btn => btn.disabled = true);
+                
+                const actualCurrent = (this.currentVoltage - this.currentLEDVoltage) / answer;
+                const isCorrect = answer === this.currentAnswer;
+                const requiredResistance = (this.currentVoltage - this.currentLEDVoltage) / 0.02;
+                
+                if(isCorrect) {
+                    this.playSound('correct');
+                    led.classList.add('on');
+                    this.score += 15;
+                    this.streak++;
+                    feedback.className = 'feedback correct';
+                    feedback.innerHTML = `¡Excelente! Con ${answer}Ω la corriente será ${(actualCurrent * 1000).toFixed(1)}mA. El LED está protegido.<br><br>
+                    <strong>Cálculo:</strong><br>
+                    R = (${this.currentVoltage}V - ${this.currentLEDVoltage}V) / 0.02A = ${requiredResistance.toFixed(0)}Ω<br>
+                    Resistencia comercial más cercana: ${answer}Ω`;
+                } else {
+                    this.playSound('incorrect');
+                    if(actualCurrent > 0.025) {
+                        led.classList.add('burned');
+                        feedback.innerHTML = `¡Cuidado! Con ${answer}Ω la corriente será ${(actualCurrent * 1000).toFixed(1)}mA. ¡El LED se quemó!<br><br>
+                        <strong>Cálculo correcto:</strong><br>
+                        R = (${this.currentVoltage}V - ${this.currentLEDVoltage}V) / 0.02A = ${requiredResistance.toFixed(0)}Ω<br>
+                        Resistencia comercial correcta: ${this.currentAnswer}Ω`;
+                    } else {
+                        led.classList.add('on');
+                        feedback.innerHTML = `Con ${answer}Ω la corriente será ${(actualCurrent * 1000).toFixed(1)}mA. El LED está seguro pero no es la opción óptima.<br><br>
+                        <strong>Cálculo óptimo:</strong><br>
+                        R = (${this.currentVoltage}V - ${this.currentLEDVoltage}V) / 0.02A = ${requiredResistance.toFixed(0)}Ω<br>
+                        Resistencia comercial más cercana: ${this.currentAnswer}Ω`;
+                    }
+                    this.streak = 0;
+                    feedback.className = 'feedback incorrect';
+                }
+                
+                this.showCorrectAnswer(buttons, this.currentAnswer);
+                feedback.style.display = 'block';
+                document.getElementById('nextBtn').style.display = 'block';
+                this.updateDisplay();
+            }
+            
+            checkPowerAnswer(answer) {
+                const buttons = document.querySelectorAll('.option-btn');
+                const feedback = document.getElementById('feedback');
+                
+                buttons.forEach(btn => btn.disabled = true);
+                
+                // Calcular valores para mostrar en el feedback
+                const voltage = parseInt(document.querySelector('.circuit-values p:nth-child(2)').textContent.split(':')[1]);
+                const resistance = parseInt(document.querySelector('.circuit-values p:nth-child(3)').textContent.split(':')[1]);
+                const current = voltage / resistance;
+                
+                if(Math.abs(answer - this.currentAnswer) < 0.001) {
+                    this.playSound('correct');
+                    this.score += 20;
+                    this.streak++;
+                    feedback.className = 'feedback correct';
+                    feedback.innerHTML = `¡Perfecto! La potencia disipada es ${answer.toFixed(3)}W<br><br>
+                    <strong>Cálculo:</strong><br>
+                    I = V / R = ${voltage}V / ${resistance}Ω = ${current.toFixed(3)}A<br>
+                    P = I² × R = (${current.toFixed(3)}A)² × ${resistance}Ω = ${this.currentAnswer.toFixed(3)}W<br>
+                    <em>También: P = V² / R = ${voltage}²V / ${resistance}Ω = ${this.currentAnswer.toFixed(3)}W</em>`;
+                } else {
+                    this.playSound('incorrect');
+                    this.streak = 0;
+                    feedback.className = 'feedback incorrect';
+                    feedback.innerHTML = `Incorrecto. La potencia correcta es ${this.currentAnswer.toFixed(3)}W<br><br>
+                    <strong>Cálculo correcto:</strong><br>
+                    I = V / R = ${voltage}V / ${resistance}Ω = ${current.toFixed(3)}A<br>
+                    P = I² × R = (${current.toFixed(3)}A)² × ${resistance}Ω = ${this.currentAnswer.toFixed(3)}W<br>
+                    <em>También: P = V² / R = ${voltage}²V / ${resistance}Ω = ${this.currentAnswer.toFixed(3)}W</em>`;
+                }
+                
+                this.showCorrectAnswerPower(buttons, this.currentAnswer);
+                feedback.style.display = 'block';
+                document.getElementById('nextBtn').style.display = 'block';
+                this.updateDisplay();
+            }
+            
+            checkCableAnswer(answer) {
+                const buttons = document.querySelectorAll('.option-btn');
+                const feedback = document.getElementById('feedback');
+                
+                buttons.forEach(btn => btn.disabled = true);
+                
+                // Obtener valores para el cálculo del feedback
+                const length = parseInt(document.querySelector('.circuit-values p:nth-child(2)').textContent.split(':')[1]);
+                const area = parseFloat(document.querySelector('.circuit-values p:nth-child(3)').textContent.split(':')[1]);
+                const areaM2 = area * 1e-6;
+                
+                if(Math.abs(answer - this.currentAnswer) < 0.001) {
+                    this.playSound('correct');
+                    this.score += 25;
+                    this.streak++;
+                    feedback.className = 'feedback correct';
+                    feedback.innerHTML = `¡Excelente! La resistencia del cable es ${answer.toFixed(3)}Ω<br><br>
+                    <strong>Cálculo:</strong><br>
+                    R = ρ × L / A<br>
+                    R = (1.7 × 10⁻⁸ Ω·m) × ${length}m / (${area} × 10⁻⁶ m²)<br>
+                    R = ${(this.copperResistivity * length).toExponential(2)} / ${(areaM2).toExponential(2)}<br>
+                    R = ${this.currentAnswer.toFixed(3)}Ω`;
+                } else {
+                    this.playSound('incorrect');
+                    this.streak = 0;
+                    feedback.className = 'feedback incorrect';
+                    feedback.innerHTML = `Incorrecto. La resistencia correcta es ${this.currentAnswer.toFixed(3)}Ω<br><br>
+                    <strong>Cálculo correcto:</strong><br>
+                    R = ρ × L / A<br>
+                    R = (1.7 × 10⁻⁸ Ω·m) × ${length}m / (${area} × 10⁻⁶ m²)<br>
+                    R = ${(this.copperResistivity * length).toExponential(2)} / ${(areaM2).toExponential(2)}<br>
+                    R = ${this.currentAnswer.toFixed(3)}Ω`;
+                }
+                
+                this.showCorrectAnswerCable(buttons, this.currentAnswer);
+                feedback.style.display = 'block';
+                document.getElementById('nextBtn').style.display = 'block';
+                this.updateDisplay();
+            }
+            
+            showCorrectAnswer(buttons, correctAnswer) {
+                buttons.forEach(btn => {
+                    const btnValue = parseInt(btn.textContent.replace(/[^\d]/g, ''));
+                    if(btnValue === correctAnswer) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+            
+            showIncorrectAnswer(buttons, wrongAnswer) {
+                buttons.forEach(btn => {
+                    const btnValue = parseInt(btn.textContent.replace(/[^\d]/g, ''));
+                    if(btnValue === wrongAnswer) {
+                        btn.classList.add('incorrect');
+                    }
+                });
+            }
+            
+            showCorrectAnswerPower(buttons, correctAnswer) {
+                buttons.forEach(btn => {
+                    const btnValue = parseFloat(btn.textContent.replace('W', ''));
+                    if(Math.abs(btnValue - correctAnswer) < 0.001) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+            
+            showCorrectAnswerCable(buttons, correctAnswer) {
+                buttons.forEach(btn => {
+                    const btnValue = parseFloat(btn.textContent.replace('Ω', ''));
+                    if(Math.abs(btnValue - correctAnswer) < 0.001) {
+                        btn.classList.add('correct');
+                    }
+                });
+            }
+            
+            nextQuestion() {
+                document.getElementById('feedback').style.display = 'none';
+                document.getElementById('nextBtn').style.display = 'none';
+                
+                this.currentQuestion++;
+                
+                if(this.currentQuestion >= this.questionsPerLevel) {
+                    this.currentQuestion = 0;
+                    if(this.currentLevel < 4) {
+                        this.currentLevel++;
+                        this.showLevelComplete();
+                    } else {
+                        this.showGameComplete();
+                        return;
+                    }
+                }
+                
+                this.updateDisplay();
+                this.generateQuestion();
+            }
+            
+            showLevelComplete() {
+                const feedback = document.getElementById('feedback');
+                feedback.className = 'feedback correct';
+                feedback.textContent = `¡Nivel ${this.currentLevel - 1} completado! Avanzando al siguiente nivel...`;
+                feedback.style.display = 'block';
+                
+                setTimeout(() => {
+                    feedback.style.display = 'none';
+                }, 2000);
+            }
+            
+            showGameComplete() {
+                const gameArea = document.getElementById('gameArea');
+                gameArea.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <h2>🎉 ¡Felicitaciones! 🎉</h2>
+                        <p style="font-size: 1.2em; margin: 20px 0;">Has completado todos los niveles</p>
+                        <p><strong>Puntuación final: ${this.score} puntos</strong></p>
+                        <p>Racha máxima: ${this.streak} respuestas correctas</p>
+                        <div style="margin: 30px 0;">
+                            <h3>🏆 Logros Desbloqueados:</h3>
+                            <p>✅ Maestro de códigos de colores</p>
+                            <p>✅ Protector de LEDs</p>
+                            <p>✅ Calculador de potencia</p>
+                            <p>✅ Ingeniero de cables</p>
+                        </div>
+                        <button class="next-btn" onclick="location.reload()">Jugar de Nuevo</button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Función para cambiar tema
+        function toggleTheme() {
+            const body = document.body;
+            const themeBtn = document.querySelector('.theme-toggle');
+            
+            if(body.getAttribute('data-theme') === 'light') {
+                body.setAttribute('data-theme', 'dark');
+                themeBtn.textContent = '☀️';
+            } else {
+                body.setAttribute('data-theme', 'light');
+                themeBtn.textContent = '🌙';
+            }
+        }
+        
+        // Inicializar el juego
+        const game = new ResistorColorGame();
+        
+        // Event listener para el botón siguiente
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            game.nextQuestion();
+        });
+    </script>
+</body>
+</html>
